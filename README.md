@@ -61,12 +61,62 @@ omarchy bar move maftuuh.boxtop --section right
 | --- | --- |
 | Left click | Open / close the card |
 | Middle click | Refresh now |
-| `Esc` | Close the card |
+| `Esc` | Close the settings, or the card |
+| ⚙ icon | Open / close the settings |
 
 From a terminal or keybinding:
 
 ```sh
 omarchy-shell maftuuh.boxtop toggle
+```
+
+## Customization
+
+Click the **⚙** icon in the top-right corner of the card to change everything
+live. Your choices are saved to your widget entry in
+`~/.config/omarchy/shell.json`, so they survive plugin updates.
+
+![Presets](screenshots/presets.png)
+
+Left: `stroke` (btop outlines). Right: `no stroke` (soft filled boxes).
+
+![Stroke vs no stroke](screenshots/stroke.png)
+
+| Setting | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `preset` | `theme`, `btop`, `catppuccin`, `nord`, `mono` | `btop` | Colour palette. `theme` follows your active Omarchy theme and updates when you switch themes. |
+| `graph` | `dots`, `bars`, `line` | `dots` | History graph style |
+| `boxes` | any of `cpu`, `mem`, `net`, `proc` | all | Which boxes are shown |
+| `compact` | `true`, `false` | `false` | Smaller card with tighter rows and graphs |
+| `rounded` | `true`, `false` | `true` | Rounded or sharp box corners |
+| `stroke` | `true`, `false` | `true` | Draw btop-style box outlines, or use soft filled boxes with no outline |
+| `lineWidth` | `1`, `2`, `3` | `1` | Box border thickness |
+| `fade` | `true`, `false` | `true` | btop-style fade: process rows get dimmer toward the bottom |
+| `shadow` | `true`, `false` | `false` | Soft drop shadow behind text and lines |
+| `interval` | `1` to `10` (seconds) | `2` | How often data is refreshed while the card is open |
+| `procCount` | `3` to `15` | `8` | Number of processes in the list |
+
+You can also edit them by hand:
+
+```json
+{
+  "id": "maftuuh.boxtop",
+  "preset": "catppuccin",
+  "graph": "line",
+  "boxes": ["cpu", "mem", "proc"],
+  "compact": true,
+  "fade": true,
+  "shadow": false
+}
+```
+
+Or from a terminal or keybinding:
+
+```sh
+omarchy-shell maftuuh.boxtop preset nord
+omarchy-shell maftuuh.boxtop graph bars
+omarchy-shell maftuuh.boxtop set shadow true
+omarchy-shell maftuuh.boxtop set boxes '["cpu","mem"]'
 ```
 
 ## Optional: blurred card

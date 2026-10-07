@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Boxtop: btop-style system data for the Omarchy bar."""
-import json, pathlib, time, shutil, os
+import json, pathlib, time, shutil, os, sys
 
 P = pathlib.Path
 
@@ -189,7 +189,11 @@ mem = meminfo()
 disk = diskinfo()
 load1, load5, load15 = P("/proc/loadavg").read_text().split()[:3]
 rx, tx = net_bytes()
-procs = top_procs(8)
+try:
+    PROC_COUNT = max(1, min(20, int(sys.argv[1])))
+except (IndexError, ValueError):
+    PROC_COUNT = 8
+procs = top_procs(PROC_COUNT)
 uptime = uptime_human()
 
 def cpu_model():

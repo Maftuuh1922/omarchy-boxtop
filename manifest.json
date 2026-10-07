@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "maftuuh.boxtop",
   "name": "Boxtop",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "Maftuuh1922",
   "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and top processes in a blurred popup card",
   "kinds": [
