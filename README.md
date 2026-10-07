@@ -23,7 +23,7 @@ dot-matrix history graphs, gradient meters and a live process list.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/muhammadmaftuh/omarchy-sysmon.git --enable
+omarchy plugin add https://github.com/Maftuuh1922/omarchy-sysmon.git --enable
 ```
 
 Move it somewhere else on the bar if you like:
