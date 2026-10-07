@@ -29,11 +29,31 @@ it works with both light and dark themes.
 - **cpu** — per-core gradient meters, temperature, frequency, CPU model,
   dot-matrix usage history, uptime and load average
 - **mem** — RAM history graph plus Used / Cached / Swap / Disk meters
-- **net** — total bytes received and sent
+- **net** — live up / down rates, totals and a peak-scaled traffic chart
 - **proc** — top 8 processes by live CPU %, with PID and memory
-- Very light on resources: data is only sampled (every 2 s) while the card is
-  open. When it's closed, nothing runs.
+- **hero banner** — upload a custom image; it runs full-bleed across the card
+  with the title, photo and ⚙ sitting on top, then drains colour toward the
+  bottom so it melts into the card
+- **title** — custom text with bundled fonts (pixel / bebas / anton / mono),
+  your own TTF/OTF upload, or any installed system font. The title size
+  (16–46 px) only changes the text — the banner and photo keep their size
+- **layout** — portrait or landscape card, compact density, and drag & drop
+  the box titles to reorder the boxes
+- **update notice** — when a newer release lands on GitHub, the card says so
+  and updates itself in place
+- Very light on resources: one small sampler process runs only while the card
+  is open (about 1.5% of one core on a Celeron N4020). When it's closed,
+  nothing runs.
 - Reads `/proc` and `/sys` directly. No extra packages needed beyond `python3`.
+
+## Hero banner
+
+<p align="center"><img alt="Boxtop hero banner" src="screenshots/hero.png" width="720"></p>
+
+Open the settings (**⚙**) and use **hero → upload banner…** to pick an
+image, then **hero pos** to choose which part of it stays visible. The card
+header sits directly on the banner, and the banner's colour drains toward the
+bottom so it merges into the card instead of ending in a hard edge.
 
 ## Install
 
@@ -63,6 +83,7 @@ omarchy bar move maftuuh.boxtop --section right
 | Middle click | Refresh now |
 | `Esc` | Close the settings, or the card |
 | ⚙ icon | Open / close the settings |
+| **update** chip | Shown when the repo has a newer release: updates in place |
 
 From a terminal or keybinding:
 
@@ -84,6 +105,16 @@ Left: `stroke` (btop outlines). Right: `no stroke` (soft filled boxes).
 
 | Setting | Values | Default | What it does |
 | --- | --- | --- | --- |
+| `title` | any text (up to 32 chars) | `BOXTOP` | Title next to the photo |
+| `titleFont` | `pixel`, `bebas`, `anton`, `mono`, uploaded or system font | `pixel` | Title font family |
+| `titleSize` | `16` to `46` | `30` | Title text size only — banner and photo stay the same |
+| `subSize` | `7` to `13` | `9` | Size of the user@host · uptime line |
+| `textSize` | `normal`, `small`, `tiny` | `normal` | Scale all box text down |
+| `titleAlign` | `left`, `right` | `left` | Photo on the left or the right of the title |
+| `layout` | `portrait`, `landscape` | `portrait` | Card orientation |
+| `hero` | image path | `none` | Hero banner (⚙ → hero → upload banner…) |
+| `heroPos` | `tl` … `br` (9 anchors) | `c` | Which part of the banner stays visible |
+| `avatarPos` | `tl` … `br` (9 anchors) | `c` | Which part of the photo stays visible |
 | `preset` | `theme`, `btop`, `catppuccin`, `nord`, `mono` | `btop` | Colour palette. `theme` follows your active Omarchy theme and updates when you switch themes. |
 | `graph` | `dots`, `bars`, `line` | `dots` | History graph style |
 | `boxes` | any of `cpu`, `mem`, `net`, `proc` | all | Which boxes are shown |
@@ -140,9 +171,13 @@ background-alpha = 0.40
 
 - `manifest.json` — plugin manifest
 - `Panel.qml` — bar button and popup card
-- `boxtop.py` — stateless metrics collector. It prints one JSON object and
-  keeps a small CPU tick cache in `$XDG_RUNTIME_DIR` to work out per-process
-  CPU %.
+- `boxtop.py` — metrics sampler. `boxtop.py --watch INTERVAL COUNT` streams
+  one JSON line per tick and keeps the previous sample in memory for CPU
+  deltas; `boxtop.py [COUNT]` prints a single sample.
+- `fonts/` — bundled title fonts (Press Start 2P, Bebas Neue, Anton) with
+  their OFL licences
+- `update_check.py` — compares the local manifest with the one on GitHub and
+  prints the newer version, so the card can offer a one-click update
 
 ## Uninstall
 
