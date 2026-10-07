@@ -5,7 +5,22 @@ Click the chip icon to open a popup card styled after
 [btop](https://github.com/aristocratos/btop): rounded boxes with tab titles,
 dot-matrix history graphs, gradient meters and a live process list.
 
-![Panel](screenshots/panel.png)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="screenshots/panel-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="screenshots/panel.png">
+    <img alt="Boxtop panel" src="screenshots/panel.png" width="420">
+  </picture>
+</p>
+
+## Light & dark
+
+Boxtop picks up text and background colours from your active Omarchy theme, so
+it works with both light and dark themes.
+
+| Dark (Lupine) | Light (Rose Pine) |
+| :---: | :---: |
+| <img alt="Boxtop on a dark theme" src="screenshots/panel.png" width="360"> | <img alt="Boxtop on a light theme" src="screenshots/panel-light.png" width="360"> |
 
 ![Desktop](screenshots/desktop.png)
 
