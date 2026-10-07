@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.4.0 — 2026-10-07
+
+Hero banner, fonts and layout.
+
+- Hero banner: upload a custom image, pick its crop from nine anchor points
+  and let it run full-bleed across the card. The header (title, photo, ⚙)
+  sits directly on the banner instead of a separate strip
+- The banner dissolves into the card: colour drains toward the bottom
+  (desaturation ramp) before the background takes over, so it merges cleanly
+  on dark and light themes
+- Profile photo upload with its own crop position
+- Title customization: custom text, bundled fonts (pixel / bebas / anton /
+  mono), upload any TTF/OTF, or pick any installed system font
+- Title size (16–46 px) changes only the text — banner and photo keep their
+  size. Subtitle size and a box text scale (normal / small / tiny)
+- Portrait or landscape card, compact density, drag & drop box reordering
+- The net box charts live traffic: up / down rates, totals and peak scale
+- Update notice: the card tells you when a newer release is on GitHub and
+  updates in place (runs `omarchy plugin update`, then restarts the shell)
+- Closing the card commits any pending edit and folds the settings panel away
+- New IPC commands: `pickAvatar`, `pickHero`, `pickFont`
+
 ## v1.3.0 — 2026-10-07
 
 Customization.
