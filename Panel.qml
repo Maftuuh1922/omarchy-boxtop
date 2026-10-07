@@ -163,10 +163,11 @@ Panel {
 
   onPalChanged: repaintGraphs()
   onGraphStyleChanged: repaintGraphs()
+  onFgChanged: repaintGraphs()
 
   function repaintGraphs() {
-    cpuGraph.requestPaint()
-    memGraph.requestPaint()
+    cpuGraph.repaintAll()
+    memGraph.repaintAll()
   }
 
   Component.onCompleted: {
@@ -176,25 +177,36 @@ Panel {
     root.ramHistory = init.slice()
   }
 
-  function refresh() {
-    if (!proc.running) proc.running = true
+  // One long-running sampler while the card is open: it streams a JSON line
+  // per tick and keeps the previous sample in memory, so there is no Python
+  // start-up or /proc re-scan cost per refresh, and nothing runs when closed.
+  property bool samplerRestarting: false
+
+  function refresh() { restartSampler() }
+
+  function restartSampler() {
+    if (!root.opened) return
+    root.samplerRestarting = true
+    samplerRestartTimer.restart()
+  }
+
+  onIntervalChanged: restartSampler()
+  onProcCountChanged: restartSampler()
+
+  Timer {
+    id: samplerRestartTimer
+    interval: 60
+    onTriggered: root.samplerRestarting = false
   }
 
   Process {
     id: proc
-    command: ["python3", String(Qt.resolvedUrl("boxtop.py")).replace(/^file:\/\//, ""), String(root.procCount)]
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: root.applyStats(text)
+    running: root.opened && !root.samplerRestarting
+    command: ["python3", String(Qt.resolvedUrl("boxtop.py")).replace(/^file:\/\//, ""),
+              "--watch", String(root.interval), String(root.procCount)]
+    stdout: SplitParser {
+      onRead: function(line) { root.applyStats(line) }
     }
-  }
-
-  Timer {
-    interval: root.interval * 1000
-    running: root.opened
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: root.refresh()
   }
 
   function push(list, v) {
@@ -209,7 +221,6 @@ Panel {
     stats = d
     cpuHistory = push(cpuHistory, d.cpu / 100)
     ramHistory = push(ramHistory, d.ram_pct / 100)
-    repaintGraphs()
   }
 
   function fmtG(v) { return (Math.round(v * 10) / 10).toFixed(1) }
@@ -228,10 +239,15 @@ Panel {
     property string footRight: ""
     default property alias content: innerContent.data
 
+    // Notch widths depend only on text length, so live values (frequency,
+    // load, uptime) don't force a frame repaint every tick.
+    readonly property int rtLen: rightText.length
+    readonly property int flLen: footLeft.length
+    readonly property int frLen: footRight.length
     onBoxColorChanged: frameCanvas.requestPaint()
-    onRightTextChanged: frameCanvas.requestPaint()
-    onFootLeftChanged: frameCanvas.requestPaint()
-    onFootRightChanged: frameCanvas.requestPaint()
+    onRtLenChanged: frameCanvas.requestPaint()
+    onFlLenChanged: frameCanvas.requestPaint()
+    onFrLenChanged: frameCanvas.requestPaint()
     onDivYChanged: frameCanvas.requestPaint()
     onTagChanged: frameCanvas.requestPaint()
 
@@ -421,6 +437,29 @@ Panel {
     }
   }
 
+  // ── History graph: static grid canvas + data canvas ──
+  component GraphView: Item {
+    id: gv
+    property var history: []
+    function repaint() { dataCanvas.requestPaint() }
+    function repaintAll() { gridCanvas.requestPaint(); dataCanvas.requestPaint() }
+    onHistoryChanged: if (visible) dataCanvas.requestPaint()
+    onVisibleChanged: if (visible) repaintAll()
+    onWidthChanged: repaintAll()
+    onHeightChanged: repaintAll()
+
+    Canvas {
+      id: gridCanvas
+      anchors.fill: parent
+      onPaint: root.paintGrid(this)
+    }
+    Canvas {
+      id: dataCanvas
+      anchors.fill: parent
+      onPaint: root.paintData(this, gv.history)
+    }
+  }
+
   // ── Gradient meter ──
   component GradBar: Rectangle {
     id: gb
@@ -435,7 +474,6 @@ Panel {
       width: gb.width * Math.max(0, Math.min(1, gb.pct))
       height: gb.height
       clip: true
-      Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
 
       Rectangle {
         width: gb.width
@@ -837,14 +875,12 @@ Panel {
               }
             }
 
-            Canvas {
+            GraphView {
               id: cpuGraph
               y: cpuBoxItem.coresH + 14
               width: parent.width
               height: cpuBoxItem.graphH
-              onHeightChanged: requestPaint()
-              onWidthChanged: requestPaint()
-              onPaint: root.paintGraph(this, root.cpuHistory)
+              history: root.cpuHistory
             }
           }
 
@@ -861,13 +897,11 @@ Panel {
             divY: 15 + graphH + 5
             divLabel: "breakdown"
 
-            Canvas {
+            GraphView {
               id: memGraph
               width: parent.width
               height: memBoxItem.graphH
-              onHeightChanged: requestPaint()
-              onWidthChanged: requestPaint()
-              onPaint: root.paintGraph(this, root.ramHistory)
+              history: root.ramHistory
             }
 
             Column {
@@ -1007,6 +1041,52 @@ Panel {
   }
 
   // ── Graph rendering ──
+  readonly property real dotPitch: 4.2
+  readonly property real barPitch: 3
+
+  // Static background: dot grid or guide lines. Repainted only on resize,
+  // style or colour change.
+  function paintGrid(canvas) {
+    var ctx = canvas.getContext("2d")
+    ctx.reset()
+    var w = canvas.width, h = canvas.height
+    if (w <= 0 || h <= 0) return
+    if (root.graphStyle === "dots") {
+      var pitch = root.dotPitch
+      var cols = Math.floor(w / pitch), rows = Math.floor(h / pitch)
+      ctx.fillStyle = Util.alpha(root.fg, 0.10)
+      ctx.beginPath()
+      for (var gx = 0; gx < cols; gx++) {
+        var cx = gx * pitch + pitch / 2
+        for (var gy = 0; gy < rows; gy++) {
+          var cy = h - (gy * pitch + pitch / 2)
+          ctx.moveTo(cx + 1, cy)
+          ctx.arc(cx, cy, 1.0, 0, Math.PI * 2)
+        }
+      }
+      ctx.fill()
+    } else {
+      ctx.strokeStyle = Util.alpha(root.fg, 0.10)
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      for (var q = 1; q < 4; q++) {
+        var y = Math.round(h * q / 4) + 0.5
+        ctx.moveTo(0, y); ctx.lineTo(w, y)
+      }
+      ctx.stroke()
+    }
+  }
+
+  function paintData(canvas, history) {
+    var ctx = canvas.getContext("2d")
+    ctx.reset()
+    var w = canvas.width, h = canvas.height
+    if (w <= 0 || h <= 0 || !history || !history.length) return
+    if (root.graphStyle === "bars") paintBars(ctx, w, h, history)
+    else if (root.graphStyle === "line") paintLine(ctx, w, h, history)
+    else paintDots(ctx, w, h, history)
+  }
+
   function gradColor(stops, v) {
     var t = Math.max(0, Math.min(1, v))
     var a, b, k
@@ -1016,84 +1096,57 @@ Panel {
                    a.a + (b.a - a.a) * k)
   }
 
-  function paintGraph(canvas, history) {
-    var ctx = canvas.getContext("2d")
-    ctx.reset()
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    if (canvas.width <= 0 || canvas.height <= 0) return
-    if (root.graphStyle === "bars") paintBars(ctx, canvas.width, canvas.height, history)
-    else if (root.graphStyle === "line") paintLine(ctx, canvas.width, canvas.height, history)
-    else paintDots(ctx, canvas.width, canvas.height, history)
-  }
-
+  // Dots are batched per row: one path + one fill per colour band instead of
+  // one fill per dot.
   function paintDots(ctx, w, h, history) {
-    var pitch = 4.2
-    var cols = Math.floor(w / pitch)
-    var rows = Math.floor(h / pitch)
+    var pitch = root.dotPitch
+    var cols = Math.floor(w / pitch), rows = Math.floor(h / pitch)
     if (cols <= 0 || rows <= 0) return
-
-    ctx.fillStyle = Util.alpha(root.fg, 0.10)
-    for (var gx = 0; gx < cols; gx++) {
-      for (var gy = 0; gy < rows; gy++) {
-        ctx.beginPath()
-        ctx.arc(gx * pitch + pitch / 2, h - (gy * pitch + pitch / 2), 1.0, 0, Math.PI * 2)
-        ctx.fill()
-      }
-    }
-    if (!history || !history.length) return
-
     var n = history.length
-    for (var i = 0; i < n; i++) {
-      var c = cols - n + i
-      if (c < 0) continue
-      var filled = Math.max(1, Math.round(Math.max(0, Math.min(1, history[i])) * rows))
-      var cx = c * pitch + pitch / 2
-      for (var r = 0; r < filled; r++) {
-        ctx.fillStyle = root.gradColor(root.pal.graph, r / rows)
-        ctx.beginPath()
-        ctx.arc(cx, h - (r * pitch + pitch / 2), 1.15, 0, Math.PI * 2)
-        ctx.fill()
+    var first = Math.max(0, n - cols)
+    var filled = []
+    var maxFilled = 0
+    for (var i = first; i < n; i++) {
+      var f = Math.max(1, Math.round(Math.max(0, Math.min(1, history[i])) * rows))
+      filled.push(f)
+      if (f > maxFilled) maxFilled = f
+    }
+    var startCol = cols - filled.length
+    for (var r = 0; r < maxFilled; r++) {
+      var cy = h - (r * pitch + pitch / 2)
+      ctx.beginPath()
+      for (var c = 0; c < filled.length; c++) {
+        if (filled[c] <= r) continue
+        var cx = (startCol + c) * pitch + pitch / 2
+        ctx.moveTo(cx + 1.15, cy)
+        ctx.arc(cx, cy, 1.15, 0, Math.PI * 2)
       }
+      ctx.fillStyle = root.gradColor(root.pal.graph, r / rows)
+      ctx.fill()
     }
   }
 
   function paintBars(ctx, w, h, history) {
-    var pitch = 3
+    var pitch = root.barPitch
     var cols = Math.floor(w / pitch)
-
-    ctx.strokeStyle = Util.alpha(root.fg, 0.10)
-    ctx.lineWidth = 1
-    for (var q = 1; q < 4; q++) {
-      var gy = Math.round(h * q / 4) + 0.5
-      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke()
-    }
-    if (!history || !history.length) return
-
     var grad = ctx.createLinearGradient(0, h, 0, 0)
     grad.addColorStop(0.0, root.pal.graph[0])
     grad.addColorStop(0.5, root.pal.graph[1])
     grad.addColorStop(1.0, root.pal.graph[2])
     ctx.fillStyle = grad
-
     var n = history.length
-    for (var i = 0; i < n; i++) {
+    ctx.beginPath()
+    for (var i = Math.max(0, n - cols); i < n; i++) {
       var c = cols - n + i
-      if (c < 0) continue
       var bh = Math.max(1, Math.round(Math.max(0, Math.min(1, history[i])) * h))
-      ctx.fillRect(c * pitch, h - bh, pitch - 1, bh)
+      ctx.rect(c * pitch, h - bh, pitch - 1, bh)
     }
+    ctx.fill()
   }
 
   function paintLine(ctx, w, h, history) {
-    ctx.strokeStyle = Util.alpha(root.fg, 0.10)
-    ctx.lineWidth = 1
-    for (var q = 1; q < 4; q++) {
-      var gy = Math.round(h * q / 4) + 0.5
-      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke()
-    }
-    if (!history || history.length < 2) return
-
     var n = history.length
+    if (n < 2) return
     var step = w / (root.historyLen - 1)
     var x0 = w - (n - 1) * step
     function px(i) { return x0 + i * step }

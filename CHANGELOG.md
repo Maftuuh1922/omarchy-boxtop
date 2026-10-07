@@ -18,6 +18,23 @@ Customization.
 - New IPC commands: `preset <name>`, `graph <style>`, `set <key> <json>`
 - CPU box height adapts to the number of cores
 
+Performance:
+
+- The sampler now runs as one long-lived process while the card is open
+  (stopped on close) and streams a JSON line per tick. No more Python start-up
+  every refresh
+- CPU usage (overall, per-core, per-process) is a delta against the previous
+  tick. The two 150 ms sleeps per sample are gone
+- The process scan reads only `/proc/PID/stat`; usernames are resolved only
+  for the rows shown, and cached
+- One sample: ~500 ms → ~14 ms CPU. Total plugin cost with the card open:
+  ~36 → ~15 ms of CPU per second on a Celeron N4020
+- Graph grid is drawn once on a separate canvas; dots are batched per row
+  (one fill per colour band instead of one per dot)
+- Box frames repaint only when their layout changes, not on every value update
+- Meter width animation removed, so the blurred card isn't re-rendered at
+  60 fps after each tick
+
 ## v1.2.0 — 2026-10-07
 
 First public release.

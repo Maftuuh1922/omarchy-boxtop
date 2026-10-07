@@ -31,8 +31,9 @@ it works with both light and dark themes.
 - **mem** — RAM history graph plus Used / Cached / Swap / Disk meters
 - **net** — total bytes received and sent
 - **proc** — top 8 processes by live CPU %, with PID and memory
-- Very light on resources: data is only sampled (every 2 s) while the card is
-  open. When it's closed, nothing runs.
+- Very light on resources: one small sampler process runs only while the card
+  is open (about 1.5% of one core on a Celeron N4020). When it's closed,
+  nothing runs.
 - Reads `/proc` and `/sys` directly. No extra packages needed beyond `python3`.
 
 ## Install
@@ -140,9 +141,9 @@ background-alpha = 0.40
 
 - `manifest.json` — plugin manifest
 - `Panel.qml` — bar button and popup card
-- `boxtop.py` — stateless metrics collector. It prints one JSON object and
-  keeps a small CPU tick cache in `$XDG_RUNTIME_DIR` to work out per-process
-  CPU %.
+- `boxtop.py` — metrics sampler. `boxtop.py --watch INTERVAL COUNT` streams
+  one JSON line per tick and keeps the previous sample in memory for CPU
+  deltas; `boxtop.py [COUNT]` prints a single sample.
 
 ## Uninstall
 
