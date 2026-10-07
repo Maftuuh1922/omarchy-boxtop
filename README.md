@@ -22,7 +22,6 @@ it works with both light and dark themes.
 | :---: | :---: |
 | <img alt="Boxtop on a dark theme" src="screenshots/panel.png" width="360"> | <img alt="Boxtop on a light theme" src="screenshots/panel-light.png" width="360"> |
 
-![Desktop](screenshots/desktop.png)
 
 ## Features
 
