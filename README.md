@@ -26,6 +26,14 @@ dot-matrix history graphs, gradient meters and a live process list.
 omarchy plugin add https://github.com/Maftuuh1922/omarchy-boxtop.git --enable
 ```
 
+Or install a release archive by hand:
+
+```sh
+curl -L https://github.com/Maftuuh1922/omarchy-boxtop/releases/latest/download/maftuuh.boxtop.tar.gz \
+  | tar -xz -C ~/.config/omarchy/plugins/
+omarchy plugin enable maftuuh.boxtop
+```
+
 Move it somewhere else on the bar if you like:
 
 ```sh
