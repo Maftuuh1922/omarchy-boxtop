@@ -6,8 +6,8 @@ import qs.Ui
 
 Panel {
   id: root
-  moduleName: "muhammadmaftuh.sysmon"
-  ipcTarget: "muhammadmaftuh.sysmon"
+  moduleName: "maftuuh.boxtop"
+  ipcTarget: "maftuuh.boxtop"
   manageIpc: false
 
   implicitWidth: button.implicitWidth
@@ -44,7 +44,7 @@ Panel {
 
   Process {
     id: proc
-    command: ["python3", String(Qt.resolvedUrl("sysmon.py")).replace(/^file:\/\//, "")]
+    command: ["python3", String(Qt.resolvedUrl("boxtop.py")).replace(/^file:\/\//, "")]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.applyStats(text)
@@ -327,7 +327,7 @@ Panel {
   }
 
   IpcHandler {
-    target: "muhammadmaftuh.sysmon"
+    target: "maftuuh.boxtop"
     function open(): void { root.open() }
     function close(): void { root.close() }
     function show(): void { root.open() }
@@ -341,7 +341,7 @@ Panel {
     bar: root.bar
     text: "󰍛"
     slotSize: Style.bar.iconSlot
-    tooltipText: "System Monitor"
+    tooltipText: "Boxtop"
     onPressed: function(b) {
       if (b === Qt.MiddleButton) root.refresh()
       else root.toggle()

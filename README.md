@@ -1,4 +1,4 @@
-# System monitor — btop-style Omarchy bar widget
+# Boxtop — btop-style system monitor for the Omarchy bar
 
 A lightweight system monitor for the [Omarchy](https://omarchy.org) Quattro bar.
 Click the chip icon to open a popup card styled after
@@ -23,13 +23,13 @@ dot-matrix history graphs, gradient meters and a live process list.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/Maftuuh1922/omarchy-sysmon.git --enable
+omarchy plugin add https://github.com/Maftuuh1922/omarchy-boxtop.git --enable
 ```
 
 Move it somewhere else on the bar if you like:
 
 ```sh
-omarchy bar move muhammadmaftuh.sysmon --section right
+omarchy bar move maftuuh.boxtop --section right
 ```
 
 ## Usage
@@ -43,7 +43,7 @@ omarchy bar move muhammadmaftuh.sysmon --section right
 From a terminal or keybinding:
 
 ```sh
-omarchy-shell muhammadmaftuh.sysmon toggle
+omarchy-shell maftuuh.boxtop toggle
 ```
 
 ## Optional: blurred card
@@ -67,14 +67,14 @@ background-alpha = 0.40
 
 - `manifest.json` — plugin manifest
 - `Panel.qml` — bar button and popup card
-- `sysmon.py` — stateless metrics collector. It prints one JSON object and
+- `boxtop.py` — stateless metrics collector. It prints one JSON object and
   keeps a small CPU tick cache in `$XDG_RUNTIME_DIR` to work out per-process
   CPU %.
 
 ## Uninstall
 
 ```sh
-omarchy plugin remove muhammadmaftuh.sysmon
+omarchy plugin remove maftuuh.boxtop
 ```
 
 ## License

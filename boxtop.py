@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""btop-style system data for Omarchy bar plugin."""
+"""Boxtop: btop-style system data for the Omarchy bar."""
 import json, pathlib, time, shutil, os
 
 P = pathlib.Path
@@ -96,7 +96,7 @@ def human(b):
 # ── PROCS ──
 import pwd
 
-STATE = P(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "omarchy-sysmon-procs.json"
+STATE = P(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "omarchy-boxtop-procs.json"
 
 def top_procs(n=9):
     hz = os.sysconf("SC_CLK_TCK")

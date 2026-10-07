@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "muhammadmaftuh.sysmon",
-  "name": "System monitor",
-  "version": "1.1.0",
-  "author": "muhammadmaftuh",
+  "id": "maftuuh.boxtop",
+  "name": "Boxtop",
+  "version": "1.2.0",
+  "author": "Maftuuh1922",
   "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and top processes in a blurred popup card",
   "kinds": [
     "bar-widget"
@@ -12,7 +12,7 @@
     "barWidget": "Panel.qml"
   },
   "barWidget": {
-    "displayName": "System monitor",
+    "displayName": "Boxtop",
     "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and top processes in a blurred popup card",
     "category": "System",
     "allowMultiple": false,
