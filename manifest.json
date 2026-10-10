@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "maftuuh.boxtop",
   "name": "Boxtop",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": "Maftuuh1922",
-  "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and top processes in a blurred popup card",
+  "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and processes in a liquid-glass popup card",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
   },
   "barWidget": {
     "displayName": "Boxtop",
-    "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and top processes in a blurred popup card",
+    "description": "btop-style system monitor for the Omarchy bar: CPU, memory, network and processes in a liquid-glass popup card",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
