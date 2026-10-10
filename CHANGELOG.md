@@ -1,5 +1,50 @@
 # Changelog
 
+## v1.5.0 — 2026-10-10
+
+Liquid glass and a built-in updater.
+
+- **Liquid glass look**, flat and gradient-free: translucent card, boxes,
+  chips, sliders and bar pill share one set of glass tokens — flat tint,
+  1 px hairline border, 1 px top highlight, rounded corners
+- **Glass styles**: `regular` (adaptive frosted), `clear` (high
+  transparency), `dark` (smoked), `tinted` (coloured by the accent) and
+  `solid` (opaque, no blur — accessibility)
+- **Contrast guard**: text colour and glass opacity are solved so every
+  label clears WCAG 4.5:1 against the glass over both the theme background
+  and the wallpaper's average colour; secondary labels never dim below that
+- **Blur behind** (opt-in): writes an Omarchy Hyprland toggle file
+  (`~/.local/state/omarchy/toggles/hypr/boxtop-glass.lua`) with a layer
+  blur rule for the panel and the chosen strength; removed when turned off
+- **Accent**: 14 presets (incl. the Omarchy theme accent), custom hex, or
+  3–5 swatches extracted from the current wallpaper (Pillow → ImageMagick →
+  theme colours fallback). A manual pick turns "from wallpaper" off
+- **Sliders** with live preview: blur, glass opacity, tint, corner radius,
+  scale (80–130 %), title/subtitle size, process count
+- Settings reorganised into tabs: glass · colour · layout · header · data ·
+  presets
+- **Presets**: save/export to `~/.config/boxtop/presets/*.json`, import a
+  file, delete, and two-tap "reset to defaults"; settings are mirrored to
+  `~/.config/boxtop/settings.json` and restored after a reinstall
+- Popup position (under the icon / centred), network units (bytes / bits),
+  temperature (°C / °F), box order from settings (drag & drop still works)
+- Spring animations (card pop, chips, sliders, box moves) with a
+  reduced-motion option that follows Omarchy's animation toggle
+- Meters and graphs are flat by default (solid level colours); the old btop
+  gradients are still available as `gradients: true`
+- **Built-in updater** (`updater.py`): checks the latest GitHub release (or
+  `VERSION` / new commits on `main` when there are no releases) at start-up
+  and every 6 h with a cache, shows a dot on the bar pill and an "Update
+  available vX → vY" row with release notes; "update now" fast-forwards a
+  git install or swaps in the release tarball with a backup, validates,
+  rolls back on failure, notifies and reloads the shell. Can be switched off
+- New `VERSION` file; `update_check.py` replaced by `updater.py`
+- New IPC: `glass`, `accent`, `checkUpdate`, `update`, `reset`,
+  `savePreset`, `loadPreset`
+- Default box frames are now glass boxes (`stroke: false`); set
+  `stroke: true` for btop outlines
+- The sampler is unchanged (no extra per-tick work)
+
 ## v1.4.0 — 2026-10-07
 
 Hero banner, fonts and layout.
