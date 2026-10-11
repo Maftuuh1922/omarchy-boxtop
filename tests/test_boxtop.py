@@ -260,6 +260,24 @@ class QmlStaticTest(unittest.TestCase):
                 window = "\n".join(lines[max(0, i - 6):i + 1])
                 self.assertIn("root.gradients", window, "unguarded gradient at line %d" % (i + 1))
 
+    def test_no_clipboard_access(self):
+        # Qt text inputs watch the system clipboard as soon as they exist, and
+        # the Wayland reader has no size cap or deadline: Boxtop must not
+        # create any, nor touch the clipboard / primary selection directly.
+        code = "\n".join(l.split("//", 1)[0] for l in self.qml.splitlines())
+        for token in ("TextInput", "TextEdit", "TextField", "TextArea", "canPaste",
+                      "clipboard", "Clipboard", "persistentSelection", "wl-paste", "wl-copy"):
+            self.assertNotIn(token, code, "clipboard-capable code: %s" % token)
+        for name in ("boxtop.py", "boxtopctl.py", "updater.py"):
+            with open(os.path.join(ROOT, name), encoding="utf-8") as f:
+                src = f.read().lower()
+            for token in ("clipboard", "wl-paste", "wl-copy", "xclip", "xsel"):
+                self.assertNotIn(token, src, "%s touches the clipboard (%s)" % (name, token))
+
+    def test_glass_field_caps_input(self):
+        self.assertIn("readonly property int hardCap: 128", self.qml)
+        self.assertIn("isPaste(e)", self.qml)
+
 
 if __name__ == "__main__":
     unittest.main()
