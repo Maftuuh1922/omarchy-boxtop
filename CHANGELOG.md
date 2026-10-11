@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.5.1 — 2026-10-11
+
+Security hardening: the settings fields never touch the clipboard.
+
+- **Clipboard hardening** (marketplace review): the title, system font,
+  custom hex and preset-name fields are no longer Qt `TextInput`s. Every
+  editable Qt text input subscribes to the system clipboard when it is
+  created and re-queries it on each clipboard change, before any length
+  limit applies; on Wayland that read has no byte cap or deadline, so a
+  hostile clipboard owner could make the shell allocate memory or stall
+  without a paste. `GlassField` is now a plain key-driven field: it never
+  reads, watches or writes the clipboard or primary selection, paste
+  shortcuts (Ctrl+V, Shift+Insert, the Paste key) are ignored with a
+  toast, control characters are dropped and input is capped at the field's
+  limit (hard cap 128 characters). No other clipboard access exists in the
+  plugin
+- Look unchanged: same glass field, accent focus ring and placeholder
+
 ## v1.5.0 — 2026-10-10
 
 Liquid glass and a built-in updater.

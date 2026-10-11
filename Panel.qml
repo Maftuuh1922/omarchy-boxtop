@@ -1685,37 +1685,132 @@ Panel {
   }
 
   // Glass text field used by the title, font, hex and preset-name inputs.
+  //
+  // Deliberately NOT a TextInput / TextEdit. Every editable Qt text input
+  // subscribes to QClipboard::dataChanged when it is created (to keep its
+  // canPaste state current) and re-queries the clipboard on every change,
+  // before any maximumLength applies. On Wayland that reader has no byte
+  // limit or deadline, so a hostile clipboard owner could make the shared
+  // shell allocate or block without the user ever pasting. This field is a
+  // plain Item that only takes typed key events: it never reads, watches or
+  // writes the clipboard or the primary selection, and paste shortcuts are
+  // swallowed. Its content is capped at maxLen (and never above hardCap).
+  //
+  // `source` is the saved value the field shows when not being edited;
+  // `text` is the current content (what the user typed).
   component GlassField: Rectangle {
     id: gf
-    property alias input: gfInput
-    property alias text: gfInput.text
+    property string source: ""
+    property string text: ""
     property string placeholder: ""
     property int maxLen: 32
+    readonly property int hardCap: 128
+    readonly property int limit: Math.max(1, Math.min(gf.maxLen, gf.hardCap))
+    readonly property bool editing: gfInput.activeFocus
     signal committed(string value)
+
+    // Typed text only: drop control characters and cut to the limit.
+    function clean(s) {
+      s = String(s === undefined || s === null ? "" : s)
+      if (s.length > gf.hardCap * 2) s = s.slice(0, gf.hardCap * 2)
+      s = s.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, "")
+      return s.length > gf.limit ? s.slice(0, gf.limit) : s
+    }
+    function syncFromSource() { if (!gf.editing) gf.text = gf.clean(gf.source) }
+    onSourceChanged: syncFromSource()
+    onMaxLenChanged: gf.text = gf.clean(gf.text)
+    Component.onCompleted: syncFromSource()
+
     width: 150
     height: 18
     radius: root.rounded ? Math.min(height / 2, root.ctlRadius + 3) : 0
     color: root.ctlFill
     border.width: 1
     border.color: gfInput.activeFocus ? root.accentBase : root.boxBorder
-    TextInput {
+
+    Item {
       id: gfInput
       anchors.fill: parent
       anchors.leftMargin: 8
       anchors.rightMargin: 8
-      verticalAlignment: TextInput.AlignVCenter
-      color: root.fg
-      selectionColor: Util.alpha(root.accentBase, 0.4)
-      selectedTextColor: root.fg
-      font.family: Style.font.family
-      font.pixelSize: 9
-      maximumLength: gf.maxLen
       clip: true
-      onEditingFinished: gf.committed(text)
-      Keys.onEscapePressed: { focus = false; keyCatcher.forceActiveFocus() }
-      Keys.onReturnPressed: { focus = false; keyCatcher.forceActiveFocus() }
+      activeFocusOnTab: true
+
+      onActiveFocusChanged: {
+        if (activeFocus) { gfCaret.on = true; return }
+        gf.text = gf.clean(gf.text)
+        gf.committed(gf.text)
+      }
+
+      function leave() { gfInput.focus = false; keyCatcher.forceActiveFocus() }
+      function isPaste(e) {
+        return e.matches(StandardKey.Paste)
+            || (e.key === Qt.Key_Insert && (e.modifiers & Qt.ShiftModifier))
+            || e.key === Qt.Key_Paste
+      }
+
+      Keys.onPressed: function(e) {
+        if (isPaste(e)) {
+          // Never read the clipboard: values are typed by hand.
+          e.accepted = true
+          root.toast("paste is off in Boxtop fields · type the value")
+          return
+        }
+        if (e.key === Qt.Key_Escape || e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
+          e.accepted = true
+          leave()
+          return
+        }
+        if (e.key === Qt.Key_Backspace) {
+          e.accepted = true
+          if (e.modifiers & Qt.ControlModifier) { gf.text = ""; return }
+          var t = gf.text
+          var cut = t.length - 1
+          if (cut > 0) {
+            var c = t.charCodeAt(cut)
+            if (c >= 0xdc00 && c <= 0xdfff) cut--   // whole surrogate pair
+          }
+          gf.text = t.slice(0, Math.max(0, cut))
+          gfCaret.on = true
+          return
+        }
+        if (e.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return
+        var add = gf.clean(e.text)
+        if (add.length === 0) return
+        e.accepted = true
+        var room = gf.limit - gf.text.length
+        if (room <= 0) return
+        gf.text = gf.text + add.slice(0, room)
+        gfCaret.on = true
+      }
+
       Text {
-        visible: gfInput.text.length === 0 && !gfInput.activeFocus
+        id: gfText
+        anchors.verticalCenter: parent.verticalCenter
+        x: gfInput.activeFocus ? Math.min(0, gfInput.width - implicitWidth - 2) : 0
+        text: gf.text
+        color: root.fg
+        font.family: Style.font.family
+        font.pixelSize: 9
+      }
+      Rectangle {
+        id: gfCaret
+        property bool on: true
+        visible: gfInput.activeFocus && on
+        x: Math.min(gfText.x + gfText.implicitWidth + 1, gfInput.width - 1)
+        anchors.verticalCenter: parent.verticalCenter
+        width: 1
+        height: gfText.font.pixelSize + 3
+        color: root.fg
+      }
+      Timer {
+        interval: 530
+        repeat: true
+        running: gfInput.activeFocus
+        onTriggered: gfCaret.on = !gfCaret.on
+      }
+      Text {
+        visible: gf.text.length === 0 && !gfInput.activeFocus
         anchors.verticalCenter: parent.verticalCenter
         text: gf.placeholder
         color: root.fg
@@ -1723,6 +1818,12 @@ Panel {
         font.family: Style.font.family
         font.pixelSize: 9
       }
+    }
+    MouseArea {
+      anchors.fill: parent
+      acceptedButtons: Qt.LeftButton
+      cursorShape: Qt.IBeamCursor
+      onClicked: gfInput.forceActiveFocus()
     }
   }
 
@@ -2386,7 +2487,7 @@ Panel {
                   width: 84
                   maxLen: 7
                   placeholder: "#rrggbb"
-                  text: root.isHex(root.accentSetting) ? root.accentSetting : ""
+                  source: root.isHex(root.accentSetting) ? root.accentSetting : ""
                   onCommitted: function(v) {
                     v = String(v).trim()
                     if (v.length > 0 && v[0] !== "#") v = "#" + v
@@ -2551,7 +2652,7 @@ Panel {
                 tab: "header"; label: "title"
                 GlassField {
                   id: titleField
-                  text: root.title
+                  source: root.title
                   maxLen: 32
                   onCommitted: function(v) { if (v !== root.title) root.setSetting("title", v) }
                 }
@@ -2583,7 +2684,7 @@ Panel {
                 GlassField {
                   maxLen: 64
                   placeholder: "any installed font…"
-                  text: root.builtinFonts.indexOf(root.titleFontKey.toLowerCase()) >= 0 ? "" : root.titleFontKey
+                  source: root.builtinFonts.indexOf(root.titleFontKey.toLowerCase()) >= 0 ? "" : root.titleFontKey
                   onCommitted: function(v) { if (v.length > 0 && v !== root.titleFontKey) root.setSetting("titleFont", v) }
                 }
               }
